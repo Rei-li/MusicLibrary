@@ -14,33 +14,25 @@ namespace MusicLibrary.IO.IOHelpers
     class TextIOHelper : IIOHelper
     {
         private string file = "{0}.txt";
-        private string directoryPath = ConfigurationManager.AppSettings["RepositoryPath"].ToString();
+        private readonly string _directoryPath = ConfigurationManager.AppSettings["RepositoryPath"].ToString();
         public Library GetLibrary(string name)
         {
-            //char[] result;
-            var t = File.ReadAllText(directoryPath + String.Format(file, name));
-            //using (StreamReader reader = File.OpenText(directoryPath + String.Format(file, name)))
-            //{
-            //    result = new char[reader.BaseStream.Length];
-            //    reader.Read(result, 0, (int)reader.BaseStream.Length);
-            //}
+            var filePath = _directoryPath + String.Format(file, name);
+            if (!File.Exists(filePath)) return null;
+            var t = File.ReadAllText(_directoryPath + String.Format(file, name));
             return JObject.Parse(t).ToObject<Library>();
         }
 
         public void SaveLibrary(Library library)
         {
-            // directoryPath = ConfigurationManager.AppSettings["UrlToPing"].ToString();
-            if (!Directory.Exists(directoryPath))
+            if (!Directory.Exists(_directoryPath))
             {
-                Directory.CreateDirectory(directoryPath);
+                Directory.CreateDirectory(_directoryPath);
             }
 
             var jason = JsonConvert.SerializeObject(library);
-            File.WriteAllText(directoryPath + String.Format(file, library.Name), jason);
-            //using (StreamWriter writer = File.CreateText(directoryPath + String.Format(file, library.Name)))
-            //{
-            //    writer.Write(jason);
-            //}
+            File.WriteAllText(_directoryPath + String.Format(file, library.Name), jason);
+        
         }
     }
 }
