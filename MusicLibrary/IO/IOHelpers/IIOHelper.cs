@@ -9,7 +9,17 @@ namespace MusicLibrary.IO.IOHelpers
 {
     public interface IIOHelper
     {
+        /// <summary>
+        /// get library by name
+        /// </summary>
+        /// <param name="name">library name</param>
+        /// <returns></returns>
         Library GetLibrary(string name);
+
+        /// <summary>
+        /// save library
+        /// </summary>
+        /// <param name="library">library item</param>
         void SaveLibrary(Library library);
     }
 }

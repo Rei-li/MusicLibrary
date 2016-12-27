@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using MusicLibrary.IO;
 using MusicLibrary.IO.IOHelpers;
 using MusicLibrary.Models;
@@ -14,11 +12,16 @@ namespace MusicLibrary
         private Library _repository;
         private readonly IIOHelper _io;
 
-        public LibraryService(bool isPretty = true )
+        public LibraryService(bool isBinary = false )
         {
-            _io = (new IOService()).GetIOHelper(isPretty);
+            _io = (new IOService()).GetIOHelper(isBinary);
         }
 
+        /// <summary>
+        /// set library as working
+        /// </summary>
+        /// <param name="libName">library name to set</param>
+        /// <returns></returns>
         public bool SetLibrary(string libName)
         {
             _repository = _io.GetLibrary(libName);
@@ -26,7 +29,11 @@ namespace MusicLibrary
         }
 
 
-        public void CreateLibrary(string name)
+        /// <summary>
+        /// generate test library instance, save it to file and set as working
+        /// </summary>
+        /// <param name="name">library name to create or rewrite</param>
+        public virtual void CreateLibrary(string name)
         {
             var lib = TestDataGenerator.GenerateTestData(name);
             _io.SaveLibrary(lib);
@@ -43,7 +50,7 @@ namespace MusicLibrary
         /// <returns>filtered alboms collection</returns>
         public IEnumerable<Albom> GetAlboms(int year)
         {
-            return _repository.Singers.SelectMany(singer => singer.Alboms.Where(t => t.Year == year));
+            return _repository.Singers.SelectMany(singer => singer.Alboms.Where(t => t.Year == year).Select(a => new Albom () {Id = a.Id, Name = a.Name, Year = a.Year, Tracks = a.Tracks}));
         }
 
         /// <summary>
@@ -57,7 +64,7 @@ namespace MusicLibrary
         /// <returns>list of alboms names of particular singer</returns>
         public IList<string> GetAlbomsNames(string singerName)
         {
-            return _repository.Singers.Where(s => s.Name == singerName).SelectMany(singer => singer.Alboms.Select(a => a.Name)).ToList();
+            return _repository.Singers.Where(s => s.Name.Contains(singerName)).SelectMany(singer => singer.Alboms.Select(a => a.Name)).ToList();
         }
 
 
@@ -83,7 +90,6 @@ namespace MusicLibrary
 
                 string line = group.Key + ":  " + alboms;
                 list.Add(line);
-
             }
             return list;
 

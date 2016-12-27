@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using MusicLibrary.IO;
 using MusicLibrary.Models;
 
@@ -10,11 +9,30 @@ namespace MusicLibrary
 {
     internal class Program
     {
-        readonly IOService _service = new IOService();
+        #region Constants
+
+        private const string CREATE_CMD = "create";
+        private const string SET_LIBRARY_CMD = "lb";
+        private const string GET_ALBOMS_BY_YEAR_CMD = "alb";
+        private const string GET_ALBOMS_BY_SINGER_CMD = "albn";
+        private const string GET_ALBOMS_GROUPPED_CMD = "gr";
+        private const string EXIT_CMD = "q";
+        private const string HELP_CMD = "-help";
+
+        private const string IS_BINARY_FLAG = "-b";
+
+        private const int CMD_WITH_PARAM_MAX_ITEM_COUNT = 2;
+        private const int CMD_WITH_FLAG_MAX_ITEM_COUNT = 3;
+        private const int CMD_PARAM_ARG_NUMBER = 1;
+        private const int CMD_FLAG_ARG_NUMBER = 2;
+
+
+        #endregion
+
         static LibraryService _libraryService = null;
         private static void Main(string[] args)
         {
-            Console.WriteLine("Welcome to testing program for Deque class. Please use -help command to see the list of available commands");
+            Console.WriteLine(Resources.StartMsg);
             RunCommand();
         }
 
@@ -33,102 +51,163 @@ namespace MusicLibrary
             {
                 switch (commandElements[0])
                 {
-                    // library create or rewrite and set
-                    case "create":
-                        if (commandElements.Count >= 2)
+                    case CREATE_CMD:
+                        if (commandElements.Count >= CMD_WITH_PARAM_MAX_ITEM_COUNT)
                         {
-                            var name = commandElements[1];
-                            _libraryService = new LibraryService(commandElements.Count == 3 && commandElements[1] == "-b");
+                            var name = commandElements[CMD_PARAM_ARG_NUMBER];
+                            _libraryService = new LibraryService(commandElements.Count == CMD_WITH_FLAG_MAX_ITEM_COUNT 
+                                && commandElements[CMD_FLAG_ARG_NUMBER] == IS_BINARY_FLAG);
                             _libraryService.CreateLibrary(name);
-                            Console.WriteLine(name + " was created");
+                            Console.WriteLine(String.Format(Resources.CreatedMsg, name));
                         }
 
                         RunCommand();
                         break;
 
-                    // library try to set and create if needed
-                    case "lb":
-                        if (commandElements.Count >= 2)
+                    case SET_LIBRARY_CMD:
+                        if (commandElements.Count >= CMD_WITH_PARAM_MAX_ITEM_COUNT)
                         {
-                            var name = commandElements[1];
-                            _libraryService = new LibraryService(commandElements.Count == 3 && commandElements[1] == "-b");
+                            var name = commandElements[CMD_PARAM_ARG_NUMBER];
+                            _libraryService = new LibraryService(commandElements.Count == CMD_WITH_FLAG_MAX_ITEM_COUNT
+                                && commandElements[CMD_FLAG_ARG_NUMBER] == IS_BINARY_FLAG);
                             var wasSet = _libraryService.SetLibrary(name);
                             if (!wasSet)
                             {
                                 _libraryService.CreateLibrary(name);
-                                Console.WriteLine(name + " was created");
+                                Console.WriteLine(String.Format(Resources.CreatedMsg, name));
                             }
-                            Console.WriteLine(name + " was set");
+                            Console.WriteLine(String.Format(Resources.SetMsg, name));
                         }
                         RunCommand();
                         break;
 
-                    case "alb":
-                        if (commandElements.Count >= 2)
+                    case GET_ALBOMS_BY_YEAR_CMD:
+                        if (_libraryService != null)
                         {
                             int year;
-                            if (int.TryParse(commandElements[1], out year))
+                            if (commandElements.Count >= CMD_WITH_PARAM_MAX_ITEM_COUNT && int.TryParse(commandElements[CMD_PARAM_ARG_NUMBER], out year))
                             {
-                                var alboms = _libraryService.GetAlboms(year);
-                                foreach (var a in alboms)
+
+                                List<Albom> alboms = null;
+                                try
                                 {
-                                    Console.WriteLine(a.Year + " - " + a.Name + ": " + a.Tracks.Select(t => t.Name).Aggregate((acc, next) => next + ", " + acc));
+                                    alboms = _libraryService.GetAlboms(year).ToList();
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine(ex.Message);
+                                }
+                                if (alboms != null && alboms.Any())
+                                {
+                                    foreach (var a in alboms)
+                                    {
+                                        Console.WriteLine(a.Year + " - " + a.Name + ": " +
+                                                          a.Tracks.Select(t => t.Name)
+                                                              .Aggregate((acc, next) => next + ", " + acc));
+                                    }
+                                }
+                                else
+                                {
+                                    Console.WriteLine(Resources.NotFoundMsg);
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("Wrong Year was entered");
+                                Console.WriteLine(Resources.WrongYearMsg);
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Wrong Year was entered");
+                            Console.WriteLine(Resources.NoLibraryMsg);
                         }
+
                         RunCommand();
                         break;
 
-                    case "albn":
-                        if (commandElements.Count >= 2)
+                    case GET_ALBOMS_BY_SINGER_CMD:
+                        if (_libraryService != null)
                         {
-                            var name = commandElements[1];
-                            var alboms = _libraryService.GetAlbomsNames(name);
-
-                            Console.WriteLine(name + ": " + alboms.Aggregate((acc, next) => next + ", " + acc));
-
+                            if (commandElements.Count >= CMD_WITH_PARAM_MAX_ITEM_COUNT)
+                            {
+                                var name = commandElements[CMD_PARAM_ARG_NUMBER];
+                                List<string> alboms = null;
+                                try
+                                {
+                                    alboms = _libraryService.GetAlbomsNames(name).ToList();
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine(ex.Message);
+                                }
+                                if (alboms != null && alboms.Any())
+                                {
+                                    Console.WriteLine(name + ": " + alboms.Aggregate((acc, next) => next + ", " + acc));
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine(Resources.WrongSingerNameMsg);
+                            }
                         }
                         else
                         {
-                            Console.WriteLine("Wrong singer name");
+                            Console.WriteLine(Resources.NoLibraryMsg);
                         }
                         RunCommand();
                         break;
 
-                    case "gr":
-                        var albomsGroupped = _libraryService.GetAlbomsNamesGroupedBySinger();
-                        foreach (var a in albomsGroupped)
+                    case GET_ALBOMS_GROUPPED_CMD:
+                        if (_libraryService != null)
                         {
-                            Console.WriteLine(a);
+                            List<string> albomsGroupped = null;
+                            try
+                            {
+                                albomsGroupped = _libraryService.GetAlbomsNamesGroupedBySinger().ToList();
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
 
+                            if (albomsGroupped != null && albomsGroupped.Any())
+                            {
+                                foreach (var a in albomsGroupped)
+                                {
+                                    Console.WriteLine(a);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine(Resources.NoLibraryMsg);
                         }
                         RunCommand();
                         break;
 
-                    case "q":
+                    case EXIT_CMD:
                         break;
 
-                    case "-help":
-                        Console.WriteLine("create {name} - create new library or rewrite it and set it as current library");
-                        Console.WriteLine("lb {name} - try to set library as current and create if not exist");
-                        Console.WriteLine("alb {year}- get alboms filtered by year");
-                        Console.WriteLine("albn {singer} - get alboms names collection selected by singer name");
-                        Console.WriteLine("gr - get alboms names groupped by singer");
-                        Console.WriteLine("-help - display all available commands ");
-                        Console.WriteLine("q - exit ");
+                    case HELP_CMD:
+                        Console.WriteLine();
+                        Console.WriteLine(Resources.HelpCreateCmdMsg);
+                        Console.WriteLine();
+                        Console.WriteLine(Resources.HelpSetCmdMsg);
+                        Console.WriteLine();
+                        Console.WriteLine(Resources.HelpAlbomsByYearCmdMsg);
+                        Console.WriteLine();
+                        Console.WriteLine(Resources.HelpAlbomsBySingerCmdMsg);
+                        Console.WriteLine();
+                        Console.WriteLine(Resources.HelpAlbomsGrouppedCmdMsg);
+                        Console.WriteLine();
+                        Console.WriteLine(Resources.HelpHelpCmdMsg);
+                        Console.WriteLine();
+                        Console.WriteLine(Resources.HelpExitCmdMsg);
+                        Console.WriteLine();
                         RunCommand();
                         break;
 
                     default:
-                        Console.WriteLine("Wrong command");
+                        Console.WriteLine(Resources.WrongCommandMsg);
                         RunCommand();
                         break;
                 }
